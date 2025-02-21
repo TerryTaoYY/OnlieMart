@@ -49,4 +49,14 @@ public class OrderDAOImpl implements OrderDAO {
         query.setParameter("uid", userId);
         return query.list();
     }
+
+    @Override
+    public List<Order> findAllPaginated(int offset, int limit) {
+        Session session = sessionFactory.getCurrentSession();
+        // Example sorting by orderTime descending; adjust if you prefer a different sorting
+        Query<Order> query = session.createQuery("FROM Order o ORDER BY o.orderTime DESC", Order.class);
+        query.setFirstResult(offset);
+        query.setMaxResults(limit);
+        return query.list();
+    }
 }

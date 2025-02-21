@@ -137,4 +137,9 @@ public class OrderServiceImpl implements OrderService {
     public List<Order> findByUserId(int userId) {
         return orderDAO.findByUserId(userId);
     }
+
+    @Override
+    public List<Order> findAllPaginated(int offset, int limit) {
+        return orderDAO.findAllPaginated(offset, limit);
+    }
 }

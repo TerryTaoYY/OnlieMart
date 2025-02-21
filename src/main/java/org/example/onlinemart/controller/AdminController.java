@@ -55,8 +55,16 @@ public class AdminController {
 
     // View orders, possibly with pagination
     @GetMapping("/orders")
-    public List<Order> listOrders() {
-        return orderService.findAll();
+    public List<Order> listOrders(@RequestParam(required = false) Integer page) {
+        // If the client does not specify ?page=..., return all orders (old behavior).
+        if (page == null) {
+            return orderService.findAll();
+        }
+        // Otherwise, do pagination. Each page has 5 orders.
+        int pageSize = 5;            // fixed page size
+        int currentPage = (page < 1) ? 1 : page;  // safeguard: no negative/zero page
+        int offset = (currentPage - 1) * pageSize;
+        return orderService.findAllPaginated(offset, pageSize);
     }
 
     // ===================== Admin Summaries =====================
