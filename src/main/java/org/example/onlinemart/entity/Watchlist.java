@@ -1,9 +1,16 @@
 package org.example.onlinemart.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.util.Date;
 
+@Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "watchlist",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"user_id", "product_id"})
@@ -26,5 +33,4 @@ public class Watchlist {
     @Column(nullable = false)
     private Date createdAt = new Date();
 
-    // getters, setters ...
 }

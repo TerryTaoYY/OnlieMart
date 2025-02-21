@@ -8,6 +8,7 @@ import org.example.onlinemart.entity.Order;
 import org.example.onlinemart.entity.OrderItem;
 import org.example.onlinemart.entity.Product;
 import org.example.onlinemart.entity.User;
+import org.example.onlinemart.entity.Order.OrderStatus;
 import org.example.onlinemart.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

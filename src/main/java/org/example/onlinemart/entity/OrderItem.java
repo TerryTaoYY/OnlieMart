@@ -1,8 +1,15 @@
 package org.example.onlinemart.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 
+@Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "order_items")
 public class OrderItem {
 
@@ -28,5 +35,4 @@ public class OrderItem {
     @Column(nullable = false, precision = 10, scale = 2)
     private double retailPriceSnapshot;
 
-    // getters, setters ...
 }

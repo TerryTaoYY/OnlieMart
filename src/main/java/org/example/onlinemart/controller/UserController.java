@@ -1,6 +1,7 @@
 package org.example.onlinemart.controller;
 
-import org.example.onlinemart.dao.UserService;
+import org.example.onlinemart.service.ProductService;
+import org.example.onlinemart.service.UserService;
 import org.example.onlinemart.entity.Order;
 import org.example.onlinemart.entity.OrderItem;
 import org.example.onlinemart.entity.Product;

@@ -1,6 +1,6 @@
 package org.example.onlinemart.controller;
 
-import org.example.onlinemart.dao.UserService;
+import org.example.onlinemart.service.UserService;
 import org.example.onlinemart.dto.LoginRequest;
 import org.example.onlinemart.dto.RegistrationRequest;
 import org.example.onlinemart.entity.User;

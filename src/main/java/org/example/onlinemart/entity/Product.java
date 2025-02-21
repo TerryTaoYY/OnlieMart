@@ -1,9 +1,16 @@
 package org.example.onlinemart.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
 import java.util.Date;
 
+@Data
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "products")
 public class Product {
 
@@ -38,6 +45,4 @@ public class Product {
     public void preUpdate() {
         this.updatedAt = new Date();
     }
-
-    // getters, setters ...
 }

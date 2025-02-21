@@ -33,7 +33,7 @@ public class HibernateConfig {
     public LocalSessionFactoryBean sessionFactory(DataSource dataSource) {
         LocalSessionFactoryBean factoryBean = new LocalSessionFactoryBean();
         factoryBean.setDataSource(dataSource);
-        factoryBean.setPackagesToScan("com.example.onlinemart.entity");
+        factoryBean.setPackagesToScan("org.example.onlinemart.entity");
         Properties props = new Properties();
 
         // Basic hibernate properties

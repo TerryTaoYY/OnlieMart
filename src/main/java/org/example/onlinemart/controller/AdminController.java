@@ -1,7 +1,12 @@
 package org.example.onlinemart.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.example.onlinemart.entity.Order;
+import org.example.onlinemart.entity.Product;
+import org.example.onlinemart.service.OrderService;
+import org.example.onlinemart.service.ProductService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
