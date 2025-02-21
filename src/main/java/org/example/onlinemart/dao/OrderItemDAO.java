@@ -8,5 +8,4 @@ public interface OrderItemDAO {
     void save(OrderItem orderItem);
     void update(OrderItem orderItem);
     List<OrderItem> findByOrderId(int orderId);
-    // Possibly more queries
 }

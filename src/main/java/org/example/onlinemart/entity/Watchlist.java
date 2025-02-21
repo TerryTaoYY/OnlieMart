@@ -11,10 +11,7 @@ import java.util.Date;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "watchlist",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "product_id"})
-        })
+@Table(name = "watchlist", uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "product_id"})})
 public class Watchlist {
 
     @Id

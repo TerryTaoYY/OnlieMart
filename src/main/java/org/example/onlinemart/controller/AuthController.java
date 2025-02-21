@@ -23,9 +23,7 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserService userService,
-                          JwtTokenUtil jwtTokenUtil,
-                          BCryptPasswordEncoder passwordEncoder) {
+    public AuthController(UserService userService, JwtTokenUtil jwtTokenUtil, BCryptPasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
         this.passwordEncoder = passwordEncoder;
@@ -45,7 +43,6 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
         User user = userService.findByUsername(request.getUsername());
         if (user == null) {
-            // Use the custom exception
             throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {

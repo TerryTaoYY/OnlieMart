@@ -44,9 +44,7 @@ public class JwtTokenUtil {
         try {
             getClaims(token);
             return true;
-        } catch (ExpiredJwtException | UnsupportedJwtException
-                 | MalformedJwtException | SignatureException
-                 | IllegalArgumentException e) {
+        } catch (ExpiredJwtException | UnsupportedJwtException | MalformedJwtException | SignatureException | IllegalArgumentException e) {
             return false;
         }
     }

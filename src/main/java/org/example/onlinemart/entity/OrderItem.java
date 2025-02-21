@@ -28,7 +28,6 @@ public class OrderItem {
     @Column(nullable = false)
     private int quantity;
 
-    // Snapshots to preserve pricing at the time of purchase
     @Column(nullable = false, precision = 10, scale = 2)
     private double wholesalePriceSnapshot;
 

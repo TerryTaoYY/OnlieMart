@@ -23,14 +23,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User register(User user) {
-        // Check duplicates
         if (userDAO.findByUsername(user.getUsername()) != null) {
             throw new RuntimeException("Username already exists.");
         }
         if (userDAO.findByEmail(user.getEmail()) != null) {
             throw new RuntimeException("Email already exists.");
         }
-        // Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userDAO.save(user);
         return user;
@@ -56,16 +54,12 @@ public class UserServiceImpl implements UserService {
         return userDAO.findAll();
     }
 
-    /**
-     * Update user fields. If password is updated, we re-encode it.
-     */
     @Override
     public User updateUser(int userId, User updates) {
         User existing = userDAO.findById(userId);
         if (existing == null) {
             throw new RuntimeException("User not found with ID " + userId);
         }
-        // If username or email must remain unique, you might check for conflicts:
         if (updates.getUsername() != null && !updates.getUsername().equals(existing.getUsername())) {
             if (userDAO.findByUsername(updates.getUsername()) != null) {
                 throw new RuntimeException("Username already taken: " + updates.getUsername());
@@ -78,12 +72,10 @@ public class UserServiceImpl implements UserService {
             }
             existing.setEmail(updates.getEmail());
         }
-        // If a non-empty password is given, re-hash
         if (updates.getPassword() != null && !updates.getPassword().trim().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(updates.getPassword()));
         }
 
-        // Potentially update role, or keep the existing one if you want to control that separately
         if (updates.getRole() != null) {
             existing.setRole(updates.getRole());
         }

@@ -10,15 +10,9 @@ public interface UserService {
     User findByUsername(String username);
     User findByEmail(String email);
     List<User> findAll();
-    /**
-     * Update user fully or partially.
-     * If a password is provided, re-hash it.
-     */
+
     User updateUser(int userId, User updates);
 
-    /**
-     * Change the role of the user explicitly (e.g. promote/demote).
-     */
     User changeUserRole(int userId, User.Role newRole);
 }
 
