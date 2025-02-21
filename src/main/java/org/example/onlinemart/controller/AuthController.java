@@ -1,5 +1,6 @@
 package org.example.onlinemart.controller;
 
+import org.example.onlinemart.exception.InvalidCredentialsException;
 import org.example.onlinemart.service.UserService;
 import org.example.onlinemart.dto.LoginRequest;
 import org.example.onlinemart.dto.RegistrationRequest;
@@ -22,7 +23,8 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserService userService, JwtTokenUtil jwtTokenUtil,
+    public AuthController(UserService userService,
+                          JwtTokenUtil jwtTokenUtil,
                           BCryptPasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -43,11 +45,11 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
         User user = userService.findByUsername(request.getUsername());
         if (user == null) {
-            // custom exception for invalid credentials
-            throw new RuntimeException("Incorrect credentials, please try again.");
+            // Use the custom exception
+            throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Incorrect credentials, please try again.");
+            throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
         String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
         return ResponseEntity.ok(token);

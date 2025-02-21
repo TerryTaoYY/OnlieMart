@@ -9,6 +9,7 @@ import org.example.onlinemart.entity.OrderItem;
 import org.example.onlinemart.entity.Product;
 import org.example.onlinemart.entity.User;
 import org.example.onlinemart.entity.Order.OrderStatus;
+import org.example.onlinemart.exception.NotEnoughInventoryException;
 import org.example.onlinemart.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +47,7 @@ public class OrderServiceImpl implements OrderService {
         // create order
         Order order = new Order();
         order.setUser(user);
-        order.setOrderStatus(Order.OrderStatus.Processing);
+        order.setOrderStatus(OrderStatus.Processing);
         order.setOrderTime(new Date());
         orderDAO.save(order);
 
@@ -58,14 +59,16 @@ public class OrderServiceImpl implements OrderService {
             }
             int requestedQty = oi.getQuantity();
             if (requestedQty > product.getStock()) {
-                // revert everything by throwing an exception
-                throw new RuntimeException("NotEnoughInventoryException");
+                // revert everything by throwing a custom exception
+                throw new NotEnoughInventoryException("Not enough inventory for product ID: "
+                        + product.getProductId());
             }
+
             // deduct stock
             product.setStock(product.getStock() - requestedQty);
             productDAO.update(product);
 
-            // set order ref
+            // set references
             oi.setOrder(order);
             oi.setProduct(product);
             // snapshot
@@ -73,6 +76,7 @@ public class OrderServiceImpl implements OrderService {
             oi.setRetailPriceSnapshot(product.getRetailPrice());
             orderItemDAO.save(oi);
         }
+
         return order;
     }
 
