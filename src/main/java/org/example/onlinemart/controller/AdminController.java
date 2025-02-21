@@ -30,6 +30,11 @@ public class AdminController {
         return product;
     }
 
+    @GetMapping("/products")
+    public List<Product> listAllProducts() {
+        return productService.findAll();
+    }
+
     @PatchMapping("/products/{productId}")
     public Product updateProduct(@PathVariable int productId, @RequestBody Product updated) {
         return productService.updateProductFields(productId, updated);
@@ -69,6 +74,12 @@ public class AdminController {
     @GetMapping("/summary/total-sold")
     public int totalItemsSold() {
         return AdminSummaryUtil.countTotalSold(orderService, orderItemDAO);
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public Order viewSingleOrder(@PathVariable int orderId) {
+        // Possibly handle not found / custom check
+        return orderService.findById(orderId);
     }
 
     public static class ProductStats {
