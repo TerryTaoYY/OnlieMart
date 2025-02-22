@@ -14,6 +14,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private int userId;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -30,11 +31,11 @@ public class User {
     private Role role = Role.ROLE_USER;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false)
+    @Column(name = "created_at",nullable = false)
     private Date createdAt = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false)
+    @Column(name = "updated_at",nullable = false)
     private Date updatedAt = new Date();
 
     public User() {}
