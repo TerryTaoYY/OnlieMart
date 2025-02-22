@@ -1,11 +1,11 @@
 package org.example.onlinemart.controller;
 
-import org.example.onlinemart.dao.WatchlistDAO;
 import org.example.onlinemart.dao.OrderItemDAO;
+import org.example.onlinemart.dao.WatchlistDAO;
 import org.example.onlinemart.entity.*;
+import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
 import org.example.onlinemart.service.UserService;
-import org.example.onlinemart.service.OrderService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -21,7 +21,11 @@ public class UserController {
     private final WatchlistDAO watchlistDAO;
     private final OrderItemDAO orderItemDAO;
 
-    public UserController(UserService userService, ProductService productService, OrderService orderService, WatchlistDAO watchlistDAO, OrderItemDAO orderItemDAO) {
+    public UserController(UserService userService,
+                          ProductService productService,
+                          OrderService orderService,
+                          WatchlistDAO watchlistDAO,
+                          OrderItemDAO orderItemDAO) {
         this.userService = userService;
         this.productService = productService;
         this.orderService = orderService;
@@ -46,14 +50,17 @@ public class UserController {
         return ProductDTO.fromEntity(p);
     }
 
+
     @PostMapping("/orders")
-    public OrderDTO placeOrder(@RequestParam int userId, @RequestBody List<OrderItem> orderItems) {
+    public OrderDTO placeOrder(@RequestParam int userId,
+                               @RequestBody List<OrderItem> orderItems) {
         Order order = orderService.createOrder(userId, orderItems);
         return OrderDTO.fromEntity(order);
     }
 
     @PatchMapping("/orders/{orderId}/cancel")
-    public OrderDTO cancelOrder(@RequestParam int userId, @PathVariable int orderId) {
+    public OrderDTO cancelOrder(@RequestParam int userId,
+                                @PathVariable int orderId) {
         Order order = orderService.findById(orderId);
         if (order == null || order.getUser().getUserId() != userId) {
             throw new RuntimeException("Cannot access this order or not found");
@@ -71,7 +78,8 @@ public class UserController {
     }
 
     @GetMapping("/orders/{orderId}")
-    public OrderDTO getSingleOrder(@RequestParam int userId, @PathVariable int orderId) {
+    public OrderDTO getSingleOrder(@RequestParam int userId,
+                                   @PathVariable int orderId) {
         Order order = orderService.findById(orderId);
         if (order == null || order.getUser().getUserId() != userId) {
             throw new RuntimeException("Cannot access this order or not found");
@@ -79,8 +87,10 @@ public class UserController {
         return OrderDTO.fromEntity(order);
     }
 
+
     @PostMapping("/watchlist")
-    public String addToWatchlist(@RequestParam int userId, @RequestParam int productId) {
+    public String addToWatchlist(@RequestParam int userId,
+                                 @RequestParam int productId) {
         Watchlist existing = watchlistDAO.findByUserAndProduct(userId, productId);
         if (existing != null) {
             throw new RuntimeException("Product already on watchlist");
@@ -114,10 +124,8 @@ public class UserController {
 
     @GetMapping("/watchlist")
     public List<ProductDTO> viewWatchlist(@RequestParam int userId) {
-        List<Watchlist> items = watchlistDAO.findByUserId(userId);
-        return items.stream()
-                .map(Watchlist::getProduct)
-                .filter(p -> p.getStock() > 0)
+        List<Product> watchlistProducts = userService.getWatchlistProductsInStock(userId);
+        return watchlistProducts.stream()
                 .map(ProductDTO::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -132,19 +140,16 @@ public class UserController {
         for (Order order : completedOrders) {
             List<OrderItem> items = orderItemDAO.findByOrderId(order.getOrderId());
             for (OrderItem oi : items) {
-                int productId = oi.getProduct().getProductId();
-                productCountMap.put(productId,
-                        productCountMap.getOrDefault(productId, 0) + oi.getQuantity());
+                int pid = oi.getProduct().getProductId();
+                productCountMap.put(pid,
+                        productCountMap.getOrDefault(pid, 0) + oi.getQuantity());
             }
         }
 
         List<Map.Entry<Integer, Integer>> sorted = productCountMap.entrySet().stream()
                 .sorted((a, b) -> {
                     int cmp = b.getValue().compareTo(a.getValue());
-                    if (cmp == 0) {
-                        return Integer.compare(a.getKey(), b.getKey());
-                    }
-                    return cmp;
+                    return (cmp == 0) ? Integer.compare(a.getKey(), b.getKey()) : cmp;
                 })
                 .collect(Collectors.toList());
 
@@ -164,7 +169,7 @@ public class UserController {
     public List<ProductDTO> top3Recent(@RequestParam int userId) {
         List<Order> completedOrders = orderService.findByUserId(userId).stream()
                 .filter(o -> o.getOrderStatus() == Order.OrderStatus.Completed)
-                .sorted((o1, o2) -> o2.getOrderTime().compareTo(o1.getOrderTime())) // newest first
+                .sorted((o1, o2) -> o2.getOrderTime().compareTo(o1.getOrderTime()))
                 .collect(Collectors.toList());
 
         List<OrderItem> allItems = new ArrayList<>();
@@ -177,8 +182,10 @@ public class UserController {
             Date t2 = i2.getOrder().getOrderTime();
             int cmp = t2.compareTo(t1);
             if (cmp == 0) {
-                return Integer.compare(i1.getProduct().getProductId(),
-                        i2.getProduct().getProductId());
+                return Integer.compare(
+                        i1.getProduct().getProductId(),
+                        i2.getProduct().getProductId()
+                );
             }
             return cmp;
         });
@@ -186,16 +193,15 @@ public class UserController {
         List<ProductDTO> result = new ArrayList<>();
         Set<Integer> seenProductIds = new HashSet<>();
         for (OrderItem item : allItems) {
-            int pId = item.getProduct().getProductId();
-            if (!seenProductIds.contains(pId)) {
+            int pid = item.getProduct().getProductId();
+            if (!seenProductIds.contains(pid)) {
                 result.add(ProductDTO.fromEntity(item.getProduct()));
-                seenProductIds.add(pId);
+                seenProductIds.add(pid);
             }
             if (result.size() == 3) {
                 break;
             }
         }
-
         return result;
     }
 
@@ -204,6 +210,9 @@ public class UserController {
         private String productName;
         private String description;
         private double retailPrice;
+
+        public ProductDTO() {
+        }
 
         public static ProductDTO fromEntity(Product p) {
             ProductDTO dto = new ProductDTO();
@@ -214,37 +223,27 @@ public class UserController {
             return dto;
         }
 
-        public ProductDTO() {
-        }
-
         public int getProductId() {
             return productId;
         }
-
         public void setProductId(int productId) {
             this.productId = productId;
         }
-
         public String getProductName() {
             return productName;
         }
-
         public void setProductName(String productName) {
             this.productName = productName;
         }
-
         public String getDescription() {
             return description;
         }
-
         public void setDescription(String description) {
             this.description = description;
         }
-
         public double getRetailPrice() {
             return retailPrice;
         }
-
         public void setRetailPrice(double retailPrice) {
             this.retailPrice = retailPrice;
         }
@@ -257,6 +256,9 @@ public class UserController {
         private Date orderTime;
         private Date updatedAt;
 
+        public OrderDTO() {
+        }
+
         public static OrderDTO fromEntity(Order order) {
             OrderDTO dto = new OrderDTO();
             dto.setOrderId(order.getOrderId());
@@ -267,45 +269,33 @@ public class UserController {
             return dto;
         }
 
-        public OrderDTO() {
-        }
-
         public int getOrderId() {
             return orderId;
         }
-
         public void setOrderId(int orderId) {
             this.orderId = orderId;
         }
-
         public int getUserId() {
             return userId;
         }
-
         public void setUserId(int userId) {
             this.userId = userId;
         }
-
         public String getOrderStatus() {
             return orderStatus;
         }
-
         public void setOrderStatus(String orderStatus) {
             this.orderStatus = orderStatus;
         }
-
         public Date getOrderTime() {
             return orderTime;
         }
-
         public void setOrderTime(Date orderTime) {
             this.orderTime = orderTime;
         }
-
         public Date getUpdatedAt() {
             return updatedAt;
         }
-
         public void setUpdatedAt(Date updatedAt) {
             this.updatedAt = updatedAt;
         }
