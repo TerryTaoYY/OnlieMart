@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Demonstrates user-related endpoints.
- */
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -50,31 +47,36 @@ public class UserController {
     }
 
     @PostMapping("/orders")
-    public Order placeOrder(@RequestParam int userId, @RequestBody List<OrderItem> orderItems) {
-        return orderService.createOrder(userId, orderItems);
+    public OrderDTO placeOrder(@RequestParam int userId, @RequestBody List<OrderItem> orderItems) {
+        Order order = orderService.createOrder(userId, orderItems);
+        return OrderDTO.fromEntity(order);
     }
 
     @PatchMapping("/orders/{orderId}/cancel")
-    public Order cancelOrder(@RequestParam int userId, @PathVariable int orderId) {
+    public OrderDTO cancelOrder(@RequestParam int userId, @PathVariable int orderId) {
         Order order = orderService.findById(orderId);
         if (order == null || order.getUser().getUserId() != userId) {
             throw new RuntimeException("Cannot access this order or not found");
         }
-        return orderService.cancelOrder(orderId);
+        order = orderService.cancelOrder(orderId);
+        return OrderDTO.fromEntity(order);
     }
 
     @GetMapping("/orders")
-    public List<Order> getUserOrders(@RequestParam int userId) {
-        return orderService.findByUserId(userId);
+    public List<OrderDTO> getUserOrders(@RequestParam int userId) {
+        List<Order> orders = orderService.findByUserId(userId);
+        return orders.stream()
+                .map(OrderDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/orders/{orderId}")
-    public Order getSingleOrder(@RequestParam int userId, @PathVariable int orderId) {
+    public OrderDTO getSingleOrder(@RequestParam int userId, @PathVariable int orderId) {
         Order order = orderService.findById(orderId);
         if (order == null || order.getUser().getUserId() != userId) {
             throw new RuntimeException("Cannot access this order or not found");
         }
-        return order;
+        return OrderDTO.fromEntity(order);
     }
 
     @PostMapping("/watchlist")
@@ -175,7 +177,6 @@ public class UserController {
             Date t2 = i2.getOrder().getOrderTime();
             int cmp = t2.compareTo(t1);
             if (cmp == 0) {
-
                 return Integer.compare(i1.getProduct().getProductId(),
                         i2.getProduct().getProductId());
             }
@@ -246,6 +247,67 @@ public class UserController {
 
         public void setRetailPrice(double retailPrice) {
             this.retailPrice = retailPrice;
+        }
+    }
+
+    public static class OrderDTO {
+        private int orderId;
+        private int userId;
+        private String orderStatus;
+        private Date orderTime;
+        private Date updatedAt;
+
+        public static OrderDTO fromEntity(Order order) {
+            OrderDTO dto = new OrderDTO();
+            dto.setOrderId(order.getOrderId());
+            dto.setUserId(order.getUser().getUserId());
+            dto.setOrderStatus(order.getOrderStatus().toString());
+            dto.setOrderTime(order.getOrderTime());
+            dto.setUpdatedAt(order.getUpdatedAt());
+            return dto;
+        }
+
+        public OrderDTO() {
+        }
+
+        public int getOrderId() {
+            return orderId;
+        }
+
+        public void setOrderId(int orderId) {
+            this.orderId = orderId;
+        }
+
+        public int getUserId() {
+            return userId;
+        }
+
+        public void setUserId(int userId) {
+            this.userId = userId;
+        }
+
+        public String getOrderStatus() {
+            return orderStatus;
+        }
+
+        public void setOrderStatus(String orderStatus) {
+            this.orderStatus = orderStatus;
+        }
+
+        public Date getOrderTime() {
+            return orderTime;
+        }
+
+        public void setOrderTime(Date orderTime) {
+            this.orderTime = orderTime;
+        }
+
+        public Date getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(Date updatedAt) {
+            this.updatedAt = updatedAt;
         }
     }
 }
