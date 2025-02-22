@@ -14,6 +14,8 @@ import org.example.onlinemart.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.hibernate.Hibernate;
+
 import java.util.Date;
 import java.util.List;
 
@@ -26,7 +28,8 @@ public class OrderServiceImpl implements OrderService {
     private final ProductDAO productDAO;
     private final UserDAO userDAO;
 
-    public OrderServiceImpl(OrderDAO orderDAO, OrderItemDAO orderItemDAO, ProductDAO productDAO, UserDAO userDAO) {
+    public OrderServiceImpl(OrderDAO orderDAO, OrderItemDAO orderItemDAO,
+                            ProductDAO productDAO, UserDAO userDAO) {
         this.orderDAO = orderDAO;
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
@@ -80,16 +83,27 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cannot cancel a completed order");
         }
         if (order.getOrderStatus() == OrderStatus.Canceled) {
+
+            if (order.getUser() != null) {
+                Hibernate.initialize(order.getUser());
+            }
             return order;
         }
+
         List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
         for (OrderItem oi : items) {
             Product product = oi.getProduct();
             product.setStock(product.getStock() + oi.getQuantity());
             productDAO.update(product);
         }
+
         order.setOrderStatus(OrderStatus.Canceled);
         orderDAO.update(order);
+
+        if (order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+
         return order;
     }
 
@@ -103,10 +117,19 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cannot complete a canceled order");
         }
         if (order.getOrderStatus() == OrderStatus.Completed) {
+            if (order.getUser() != null) {
+                Hibernate.initialize(order.getUser());
+            }
             return order;
         }
+
         order.setOrderStatus(OrderStatus.Completed);
         orderDAO.update(order);
+
+        if (order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+
         return order;
     }
 
