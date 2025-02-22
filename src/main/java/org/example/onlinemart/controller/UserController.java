@@ -2,6 +2,7 @@ package org.example.onlinemart.controller;
 
 import org.example.onlinemart.dao.OrderItemDAO;
 import org.example.onlinemart.dao.WatchlistDAO;
+import org.example.onlinemart.dto.UserDTO; // <-- make sure you have this DTO in your codebase
 import org.example.onlinemart.entity.*;
 import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
@@ -50,7 +51,6 @@ public class UserController {
         return ProductDTO.fromEntity(p);
     }
 
-
     @PostMapping("/orders")
     public OrderDTO placeOrder(@RequestParam int userId,
                                @RequestBody List<OrderItem> orderItems) {
@@ -86,7 +86,6 @@ public class UserController {
         }
         return OrderDTO.fromEntity(order);
     }
-
 
     @PostMapping("/watchlist")
     public String addToWatchlist(@RequestParam int userId,
@@ -215,6 +214,7 @@ public class UserController {
         }
 
         public static ProductDTO fromEntity(Product p) {
+            if (p == null) return null;
             ProductDTO dto = new ProductDTO();
             dto.setProductId(p.getProductId());
             dto.setProductName(p.getProductName());
@@ -223,6 +223,7 @@ public class UserController {
             return dto;
         }
 
+        // Getters and setters
         public int getProductId() {
             return productId;
         }
@@ -252,6 +253,7 @@ public class UserController {
     public static class OrderDTO {
         private int orderId;
         private int userId;
+        private UserDTO user;
         private String orderStatus;
         private Date orderTime;
         private Date updatedAt;
@@ -260,9 +262,11 @@ public class UserController {
         }
 
         public static OrderDTO fromEntity(Order order) {
+            if (order == null) return null;
             OrderDTO dto = new OrderDTO();
             dto.setOrderId(order.getOrderId());
             dto.setUserId(order.getUser().getUserId());
+            dto.setUser(UserDTO.fromEntity(order.getUser()));
             dto.setOrderStatus(order.getOrderStatus().toString());
             dto.setOrderTime(order.getOrderTime());
             dto.setUpdatedAt(order.getUpdatedAt());
@@ -280,6 +284,12 @@ public class UserController {
         }
         public void setUserId(int userId) {
             this.userId = userId;
+        }
+        public UserDTO getUser() {
+            return user;
+        }
+        public void setUser(UserDTO user) {
+            this.user = user;
         }
         public String getOrderStatus() {
             return orderStatus;

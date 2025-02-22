@@ -1,6 +1,7 @@
 package org.example.onlinemart.controller;
 
 import org.example.onlinemart.dao.OrderItemDAO;
+import org.example.onlinemart.dto.OrderDTO;
 import org.example.onlinemart.entity.Order;
 import org.example.onlinemart.entity.Product;
 import org.example.onlinemart.service.OrderService;
@@ -8,7 +9,7 @@ import org.example.onlinemart.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -18,7 +19,9 @@ public class AdminController {
     private final OrderService orderService;
     private final OrderItemDAO orderItemDAO;
 
-    public AdminController(ProductService productService, OrderService orderService, OrderItemDAO orderItemDAO) {
+    public AdminController(ProductService productService,
+                           OrderService orderService,
+                           OrderItemDAO orderItemDAO) {
         this.productService = productService;
         this.orderService = orderService;
         this.orderItemDAO = orderItemDAO;
@@ -41,24 +44,41 @@ public class AdminController {
     }
 
     @PatchMapping("/orders/{orderId}/complete")
-    public Order completeOrder(@PathVariable int orderId) {
-        return orderService.completeOrder(orderId);
+    public OrderDTO completeOrder(@PathVariable int orderId) {
+        Order completed = orderService.completeOrder(orderId);
+        return OrderDTO.fromEntity(completed);
     }
 
     @PatchMapping("/orders/{orderId}/cancel")
-    public Order cancelOrder(@PathVariable int orderId) {
-        return orderService.cancelOrder(orderId);
+    public OrderDTO cancelOrder(@PathVariable int orderId) {
+        Order canceled = orderService.cancelOrder(orderId);
+        return OrderDTO.fromEntity(canceled);
     }
 
     @GetMapping("/orders")
-    public List<Order> listOrders(@RequestParam(required = false) Integer page) {
+    public List<OrderDTO> listOrders(@RequestParam(required = false) Integer page) {
         if (page == null) {
-            return orderService.findAll();
+            // Return all orders
+            return orderService.findAll().stream()
+                    .map(OrderDTO::fromEntity)
+                    .collect(Collectors.toList());
         }
         int pageSize = 5;
         int currentPage = (page < 1) ? 1 : page;
         int offset = (currentPage - 1) * pageSize;
-        return orderService.findAllPaginated(offset, pageSize);
+
+        return orderService.findAllPaginated(offset, pageSize).stream()
+                .map(OrderDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public OrderDTO viewSingleOrder(@PathVariable int orderId) {
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            throw new RuntimeException("Order not found with ID " + orderId);
+        }
+        return OrderDTO.fromEntity(order);
     }
 
     @GetMapping("/summary/most-profit")
@@ -76,21 +96,17 @@ public class AdminController {
         return AdminSummaryUtil.countTotalSold(orderService, orderItemDAO);
     }
 
-    @GetMapping("/orders/{orderId}")
-    public Order viewSingleOrder(@PathVariable int orderId) {
-        // Possibly handle not found / custom check
-        return orderService.findById(orderId);
-    }
-
     public static class ProductStats {
         private int productId;
         private String productName;
         private double totalProfit;
         private int totalSold;
 
-        public ProductStats() {}
+        public ProductStats() {
+        }
 
-        public ProductStats(int productId, String productName, double totalProfit, int totalSold) {
+        public ProductStats(int productId, String productName,
+                            double totalProfit, int totalSold) {
             this.productId = productId;
             this.productName = productName;
             this.totalProfit = totalProfit;
