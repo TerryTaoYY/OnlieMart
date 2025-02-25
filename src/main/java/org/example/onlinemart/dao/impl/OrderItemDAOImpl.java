@@ -8,6 +8,9 @@ import org.hibernate.query.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 @Repository
@@ -16,13 +19,16 @@ public class OrderItemDAOImpl implements OrderItemDAO {
 
     private final SessionFactory sessionFactory;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public OrderItemDAOImpl(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
 
     @Override
     public void save(OrderItem orderItem) {
-        sessionFactory.getCurrentSession().save(orderItem);
+        entityManager.persist(orderItem);
     }
 
     @Override
@@ -37,5 +43,20 @@ public class OrderItemDAOImpl implements OrderItemDAO {
         Query<OrderItem> query = session.createQuery(hql, OrderItem.class);
         query.setParameter("oid", orderId);
         return query.list();
+    }
+
+    @Override
+    public List<Object[]> findTop3Popular() {
+        String hql = "SELECT p AS product, SUM(oi.quantity) AS totalQty " +
+                "FROM OrderItem oi " +
+                "JOIN oi.product p " +
+                "JOIN oi.order o " +
+                "WHERE o.orderStatus = 'Completed' " +
+                "GROUP BY p.productId " +
+                "ORDER BY SUM(oi.quantity) DESC";
+
+        TypedQuery<Object[]> query = entityManager.createQuery(hql, Object[].class);
+        query.setMaxResults(3);
+        return query.getResultList();
     }
 }
