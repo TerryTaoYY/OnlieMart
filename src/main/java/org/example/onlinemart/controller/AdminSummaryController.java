@@ -16,7 +16,7 @@ public class AdminSummaryController {
     @Autowired
     private AdminSummaryService adminSummaryService;
 
-    @GetMapping("/admin-top3-popular")
+    @GetMapping("/top3-popular")
     public List<PopularProductResult> getTop3Popular() {
         return adminSummaryService.getTop3PopularProducts();
     }

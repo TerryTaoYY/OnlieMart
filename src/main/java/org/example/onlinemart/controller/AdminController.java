@@ -86,7 +86,7 @@ public class AdminController {
         return AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
     }
 
-    @GetMapping("/summary/top3-popular-users")
+    @GetMapping("/summary/top3-popular")
     public List<ProductStats> top3PopularProducts() {
         return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
     }
