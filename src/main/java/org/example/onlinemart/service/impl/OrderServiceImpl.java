@@ -133,19 +133,40 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
+//    @Override
+//    public Order findById(int orderId) {
+//        return orderDAO.findById(orderId);
+//    }
+
     @Override
     public Order findById(int orderId) {
-        return orderDAO.findById(orderId);
+        Order order = orderDAO.findById(orderId);
+        if (order != null && order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+        return order;
     }
+
 
     @Override
     public List<Order> findAll() {
         return orderDAO.findAll();
     }
 
+//    @Override
+//    public List<Order> findByUserId(int userId) {
+//        return orderDAO.findByUserId(userId);
+//    }
+
     @Override
     public List<Order> findByUserId(int userId) {
-        return orderDAO.findByUserId(userId);
+        List<Order> orders = orderDAO.findByUserId(userId);
+        for (Order o : orders) {
+            if (o.getUser() != null) {
+                Hibernate.initialize(o.getUser());
+            }
+        }
+        return orders;
     }
 
     @Override
