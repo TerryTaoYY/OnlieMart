@@ -8,6 +8,7 @@ import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,9 +87,27 @@ public class AdminController {
         return AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
     }
 
+//    @GetMapping("/summary/top3-popular")
+//    public List<ProductStats> top3PopularProducts() {
+//        return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
+//    }
+
     @GetMapping("/summary/top3-popular")
-    public List<ProductStats> top3PopularProducts() {
-        return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
+    public List<PopularProductResult> getTop3PopularProducts() {
+        // Option 1: If you use the DAO directly:
+        List<Object[]> rows = orderItemDAO.findTop3Popular();
+        List<PopularProductResult> results = new ArrayList<>();
+
+        for (Object[] row : rows) {
+            Product product = (Product) row[0];
+            Long totalQty = (Long) row[1];
+            results.add(new PopularProductResult(
+                    (long) product.getProductId(),
+                    product.getProductName(),
+                    totalQty
+            ));
+        }
+        return results;
     }
 
     @GetMapping("/summary/total-sold")
