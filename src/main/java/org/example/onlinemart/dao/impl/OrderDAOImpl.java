@@ -38,7 +38,11 @@ public class OrderDAOImpl implements OrderDAO {
     @Override
     public List<Order> findAll() {
         Session session = sessionFactory.getCurrentSession();
-        return session.createQuery("FROM Order", Order.class).list();
+        Query<Order> query = session.createQuery(
+                "SELECT DISTINCT o FROM Order o JOIN FETCH o.user",
+                Order.class
+        );
+        return query.list();
     }
 
     @Override
@@ -53,7 +57,12 @@ public class OrderDAOImpl implements OrderDAO {
     @Override
     public List<Order> findAllPaginated(int offset, int limit) {
         Session session = sessionFactory.getCurrentSession();
-        Query<Order> query = session.createQuery("FROM Order o ORDER BY o.orderTime DESC", Order.class);
+        Query<Order> query = session.createQuery(
+                "SELECT DISTINCT o " +
+                        "FROM Order o " +
+                        "JOIN FETCH o.user " +
+                        "ORDER BY o.orderTime DESC",
+                Order.class);
         query.setFirstResult(offset);
         query.setMaxResults(limit);
         return query.list();
