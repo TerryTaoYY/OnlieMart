@@ -60,7 +60,6 @@ public class AdminController {
     @GetMapping("/orders")
     public List<OrderDTO> listOrders(@RequestParam(required = false) Integer page) {
         if (page == null) {
-            // Return all orders
             return orderService.findAll().stream()
                     .map(OrderDTO::fromEntity)
                     .collect(Collectors.toList());
@@ -88,14 +87,8 @@ public class AdminController {
         return AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
     }
 
-//    @GetMapping("/summary/top3-popular")
-//    public List<ProductStats> top3PopularProducts() {
-//        return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
-//    }
-
     @GetMapping("/summary/admin-top3-popular")
     public List<PopularProductResult> getTop3PopularProducts() {
-        // Option 1: If you use the DAO directly:
         List<Object[]> rows = orderItemDAO.findTop3Popular();
         List<PopularProductResult> results = new ArrayList<>();
 

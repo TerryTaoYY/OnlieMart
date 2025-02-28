@@ -39,8 +39,6 @@ public class OrderItemDAOImpl implements OrderItemDAO {
     @Override
     public List<OrderItem> findByOrderId(int orderId) {
         Session session = sessionFactory.getCurrentSession();
-//        String hql = "FROM OrderItem oi WHERE oi.order.orderId = :oid";
-        //String hql = "SELECT oi FROM OrderItem oi JOIN FETCH oi.product WHERE oi.order.orderId = :oid";
         String hql = "SELECT oi " +
                 "FROM OrderItem oi " +
                 "JOIN FETCH oi.product p " +

@@ -133,11 +133,6 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-//    @Override
-//    public Order findById(int orderId) {
-//        return orderDAO.findById(orderId);
-//    }
-
     @Override
     public Order findById(int orderId) {
         Order order = orderDAO.findById(orderId);
@@ -152,11 +147,6 @@ public class OrderServiceImpl implements OrderService {
     public List<Order> findAll() {
         return orderDAO.findAll();
     }
-
-//    @Override
-//    public List<Order> findByUserId(int userId) {
-//        return orderDAO.findByUserId(userId);
-//    }
 
     @Override
     public List<Order> findByUserId(int userId) {

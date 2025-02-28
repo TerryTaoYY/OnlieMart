@@ -223,28 +223,34 @@ public class UserController {
             return dto;
         }
 
-        // Getters and setters
         public int getProductId() {
             return productId;
         }
+
         public void setProductId(int productId) {
             this.productId = productId;
         }
+
         public String getProductName() {
             return productName;
         }
+
         public void setProductName(String productName) {
             this.productName = productName;
         }
+
         public String getDescription() {
             return description;
         }
+
         public void setDescription(String description) {
             this.description = description;
         }
+
         public double getRetailPrice() {
             return retailPrice;
         }
+
         public void setRetailPrice(double retailPrice) {
             this.retailPrice = retailPrice;
         }
@@ -276,36 +282,47 @@ public class UserController {
         public int getOrderId() {
             return orderId;
         }
+
         public void setOrderId(int orderId) {
             this.orderId = orderId;
         }
+
         public int getUserId() {
             return userId;
         }
+
         public void setUserId(int userId) {
             this.userId = userId;
         }
+
         public UserDTO getUser() {
             return user;
         }
+
         public void setUser(UserDTO user) {
             this.user = user;
         }
+
         public String getOrderStatus() {
             return orderStatus;
         }
+
         public void setOrderStatus(String orderStatus) {
             this.orderStatus = orderStatus;
         }
+
         public Date getOrderTime() {
             return orderTime;
         }
+
         public void setOrderTime(Date orderTime) {
             this.orderTime = orderTime;
         }
+
         public Date getUpdatedAt() {
             return updatedAt;
         }
+
         public void setUpdatedAt(Date updatedAt) {
             this.updatedAt = updatedAt;
         }
