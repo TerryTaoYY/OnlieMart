@@ -93,7 +93,7 @@ public class AdminController {
 //        return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
 //    }
 
-    @GetMapping("/summary/top3-popular")
+    @GetMapping("/summary/admin-top3-popular")
     public List<PopularProductResult> getTop3PopularProducts() {
         // Option 1: If you use the DAO directly:
         List<Object[]> rows = orderItemDAO.findTop3Popular();
