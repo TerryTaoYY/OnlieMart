@@ -48,7 +48,14 @@ public class AuthController {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
-        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
+
+        // Now include userId as the third argument
+        String token = jwtTokenUtil.generateToken(
+                user.getUsername(),
+                user.getRole().name(),
+                user.getUserId()
+        );
+
         return ResponseEntity.ok(token);
     }
 }
