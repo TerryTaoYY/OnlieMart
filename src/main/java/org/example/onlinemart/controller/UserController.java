@@ -204,6 +204,19 @@ public class UserController {
         return result;
     }
 
+    @GetMapping("/orders/{orderId}/products")
+    public List<ProductDTO> getProductsByOrder(@RequestParam int userId, @PathVariable int orderId) {
+        Order order = orderService.findById(orderId);
+        if (order == null || order.getUser().getUserId() != userId) {
+            throw new RuntimeException("Cannot access this order or order not found.");
+        }
+        List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
+        return items.stream()
+                .map(OrderItem::getProduct)
+                .map(ProductDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
     public static class ProductDTO {
         private int productId;
         private String productName;
