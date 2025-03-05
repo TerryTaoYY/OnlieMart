@@ -1,5 +1,7 @@
 package org.example.onlinemart.service.impl;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.example.onlinemart.dao.OrderDAO;
 import org.example.onlinemart.dao.OrderItemDAO;
 import org.example.onlinemart.dao.ProductDAO;
@@ -15,9 +17,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.hibernate.Hibernate;
+import redis.clients.jedis.Jedis;
 
+import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.List;
+
+import static sun.plugin2.util.PojoUtil.toJson;
 
 @Service
 @Transactional
@@ -27,13 +33,15 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemDAO orderItemDAO;
     private final ProductDAO productDAO;
     private final UserDAO userDAO;
+    private final Jedis jedis;
 
     public OrderServiceImpl(OrderDAO orderDAO, OrderItemDAO orderItemDAO,
-                            ProductDAO productDAO, UserDAO userDAO) {
+                            ProductDAO productDAO, UserDAO userDAO,Jedis jedis) {
         this.orderDAO = orderDAO;
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
         this.userDAO = userDAO;
+        this.jedis = jedis;
     }
 
     @Override
@@ -140,6 +148,26 @@ public class OrderServiceImpl implements OrderService {
             Hibernate.initialize(order.getUser());
         }
         return order;
+    }
+
+    private String toJson(Object obj) {
+        return new Gson().toJson(obj);
+    }
+
+    private <T> List<T> fromJsonList(String json, Class<T> clazz) {
+        Type typeOfT = TypeToken.getParameterized(List.class, clazz).getType();
+        return new Gson().fromJson(json, typeOfT);
+    }
+
+    public List<Order> findAllCached() {
+        String cacheKey = "orders:all";
+        String cachedJson = jedis.get(cacheKey);
+        if (cachedJson != null) {
+            return fromJsonList(cachedJson, Order.class);
+        }
+        List<Order> result = orderDAO.findAll();
+        jedis.setex(cacheKey, 30, toJson(result));
+        return result;
     }
 
 

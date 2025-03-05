@@ -5,6 +5,7 @@ import org.example.onlinemart.dto.OrderDTO;
 import org.example.onlinemart.dto.PopularProductResult;
 import org.example.onlinemart.entity.Order;
 import org.example.onlinemart.entity.Product;
+import org.example.onlinemart.service.AdminSummaryService;
 import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
 import org.springframework.web.bind.annotation.*;
@@ -20,13 +21,16 @@ public class AdminController {
     private final ProductService productService;
     private final OrderService orderService;
     private final OrderItemDAO orderItemDAO;
+    private final AdminSummaryService adminSummaryService;
 
     public AdminController(ProductService productService,
                            OrderService orderService,
-                           OrderItemDAO orderItemDAO) {
+                           OrderItemDAO orderItemDAO,
+                           AdminSummaryService adminSummaryService) {
         this.productService = productService;
         this.orderService = orderService;
         this.orderItemDAO = orderItemDAO;
+        this.adminSummaryService = adminSummaryService;
     }
 
     @PostMapping("/products")
@@ -60,7 +64,8 @@ public class AdminController {
     @GetMapping("/orders")
     public List<OrderDTO> listOrders(@RequestParam(required = false) Integer page) {
         if (page == null) {
-            return orderService.findAll().stream()
+            List<Order> orders = orderService.findAllCached();
+            return orders.stream()
                     .map(OrderDTO::fromEntity)
                     .collect(Collectors.toList());
         }
@@ -84,7 +89,7 @@ public class AdminController {
 
     @GetMapping("/summary/most-profit")
     public ProductStats mostProfitableProduct() {
-        return AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
+        return adminSummaryService.findMostProfitableProduct();
     }
 
     @GetMapping("/summary/admin-top3-popular")
@@ -106,7 +111,7 @@ public class AdminController {
 
     @GetMapping("/summary/total-sold")
     public int totalItemsSold() {
-        return AdminSummaryUtil.countTotalSold(orderService, orderItemDAO);
+        return adminSummaryService.countTotalSold();
     }
 
     public static class ProductStats {
@@ -118,8 +123,7 @@ public class AdminController {
         public ProductStats() {
         }
 
-        public ProductStats(int productId, String productName,
-                            double totalProfit, int totalSold) {
+        public ProductStats(int productId, String productName, double totalProfit, int totalSold) {
             this.productId = productId;
             this.productName = productName;
             this.totalProfit = totalProfit;

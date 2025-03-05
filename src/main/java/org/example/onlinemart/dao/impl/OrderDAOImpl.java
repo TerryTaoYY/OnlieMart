@@ -5,8 +5,10 @@ import org.example.onlinemart.entity.Order;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
@@ -15,9 +17,12 @@ import java.util.List;
 public class OrderDAOImpl implements OrderDAO {
 
     private final SessionFactory sessionFactory;
+    private final Jedis jedis;
 
-    public OrderDAOImpl(SessionFactory sessionFactory) {
+    @Autowired
+    public OrderDAOImpl(SessionFactory sessionFactory, Jedis jedis) {
         this.sessionFactory = sessionFactory;
+        this.jedis = jedis;
     }
 
     @Override
@@ -28,6 +33,7 @@ public class OrderDAOImpl implements OrderDAO {
     @Override
     public void update(Order order) {
         sessionFactory.getCurrentSession().update(order);
+        jedis.del("orders:all");
     }
 
     @Override

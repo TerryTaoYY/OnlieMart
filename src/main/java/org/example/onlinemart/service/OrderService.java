@@ -13,4 +13,5 @@ public interface OrderService {
     List<Order> findAll();
     List<Order> findByUserId(int userId);
     List<Order> findAllPaginated(int offset, int limit);
+    List<Order> findAllCached();
 }
