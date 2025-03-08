@@ -2,7 +2,7 @@ package org.example.onlinemart.controller;
 
 import org.example.onlinemart.dao.OrderItemDAO;
 import org.example.onlinemart.dao.WatchlistDAO;
-import org.example.onlinemart.dto.UserDTO; // <-- make sure you have this DTO in your codebase
+import org.example.onlinemart.dto.UserDTO;
 import org.example.onlinemart.entity.*;
 import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
