@@ -16,29 +16,30 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_id")
     private int productId;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "product_name", nullable = false, length = 100)
     private String productName;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "wholesale_price", nullable = false, precision = 10, scale = 2)
     private double wholesalePrice;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "retail_price", nullable = false, precision = 10, scale = 2)
     private double retailPrice;
 
     @Column(nullable = false)
     private int stock;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private Date createdAt = new Date();
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Date updatedAt = new Date();
 
     @PreUpdate

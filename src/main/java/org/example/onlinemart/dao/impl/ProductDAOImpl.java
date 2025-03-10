@@ -12,7 +12,6 @@ import java.util.List;
 @Repository
 @Transactional
 public class ProductDAOImpl implements ProductDAO {
-
     private final SessionFactory sessionFactory;
 
     public ProductDAOImpl(SessionFactory sessionFactory) {

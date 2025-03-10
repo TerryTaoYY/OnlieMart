@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 
 @Data
 @Entity
@@ -15,6 +16,7 @@ public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_item_id")
     private int orderItemId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -28,7 +30,12 @@ public class OrderItem {
     @Column(nullable = false)
     private int quantity;
 
-    // Snapshots to preserve pricing at the time of purchase
+//    @Column(name = "wholesale_price_snapshot", nullable = false, precision = 10, scale = 2)
+//    private BigDecimal wholesalePriceSnapshot;
+//
+//    @Column(name = "retail_price_snapshot", nullable = false, precision = 10, scale = 2)
+//    private BigDecimal retailPriceSnapshot;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private double wholesalePriceSnapshot;
 

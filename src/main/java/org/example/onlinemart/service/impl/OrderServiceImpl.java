@@ -1,5 +1,7 @@
 package org.example.onlinemart.service.impl;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import org.example.onlinemart.dao.OrderDAO;
 import org.example.onlinemart.dao.OrderItemDAO;
 import org.example.onlinemart.dao.ProductDAO;
@@ -14,8 +16,14 @@ import org.example.onlinemart.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.hibernate.Hibernate;
+import redis.clients.jedis.Jedis;
+
+import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.List;
+
+import static sun.plugin2.util.PojoUtil.toJson;
 
 @Service
 @Transactional
@@ -25,33 +33,30 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemDAO orderItemDAO;
     private final ProductDAO productDAO;
     private final UserDAO userDAO;
+    private final Jedis jedis;
 
-    public OrderServiceImpl(OrderDAO orderDAO,
-                            OrderItemDAO orderItemDAO,
-                            ProductDAO productDAO,
-                            UserDAO userDAO) {
+    public OrderServiceImpl(OrderDAO orderDAO, OrderItemDAO orderItemDAO,
+                            ProductDAO productDAO, UserDAO userDAO,Jedis jedis) {
         this.orderDAO = orderDAO;
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
         this.userDAO = userDAO;
+        this.jedis = jedis;
     }
 
     @Override
     public Order createOrder(int userId, List<OrderItem> items) {
-        // fetch user
         User user = userDAO.findById(userId);
         if (user == null) {
             throw new RuntimeException("User not found");
         }
 
-        // create order
         Order order = new Order();
         order.setUser(user);
         order.setOrderStatus(OrderStatus.Processing);
         order.setOrderTime(new Date());
         orderDAO.save(order);
 
-        // for each item, deduct stock, save snapshots
         for (OrderItem oi : items) {
             Product product = productDAO.findById(oi.getProduct().getProductId());
             if (product == null) {
@@ -59,19 +64,15 @@ public class OrderServiceImpl implements OrderService {
             }
             int requestedQty = oi.getQuantity();
             if (requestedQty > product.getStock()) {
-                // revert everything by throwing a custom exception
                 throw new NotEnoughInventoryException("Not enough inventory for product ID: "
                         + product.getProductId());
             }
 
-            // deduct stock
             product.setStock(product.getStock() - requestedQty);
             productDAO.update(product);
 
-            // set references
             oi.setOrder(order);
             oi.setProduct(product);
-            // snapshot
             oi.setWholesalePriceSnapshot(product.getWholesalePrice());
             oi.setRetailPriceSnapshot(product.getRetailPrice());
             orderItemDAO.save(oi);
@@ -90,18 +91,27 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cannot cancel a completed order");
         }
         if (order.getOrderStatus() == OrderStatus.Canceled) {
-            // already canceled
+
+            if (order.getUser() != null) {
+                Hibernate.initialize(order.getUser());
+            }
             return order;
         }
-        // revert stock
+
         List<OrderItem> items = orderItemDAO.findByOrderId(orderId);
         for (OrderItem oi : items) {
             Product product = oi.getProduct();
             product.setStock(product.getStock() + oi.getQuantity());
             productDAO.update(product);
         }
+
         order.setOrderStatus(OrderStatus.Canceled);
         orderDAO.update(order);
+
+        if (order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+
         return order;
     }
 
@@ -115,18 +125,51 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cannot complete a canceled order");
         }
         if (order.getOrderStatus() == OrderStatus.Completed) {
-            // already completed
+            if (order.getUser() != null) {
+                Hibernate.initialize(order.getUser());
+            }
             return order;
         }
+
         order.setOrderStatus(OrderStatus.Completed);
         orderDAO.update(order);
+
+        if (order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+
         return order;
     }
 
     @Override
     public Order findById(int orderId) {
-        return orderDAO.findById(orderId);
+        Order order = orderDAO.findById(orderId);
+        if (order != null && order.getUser() != null) {
+            Hibernate.initialize(order.getUser());
+        }
+        return order;
     }
+
+    private String toJson(Object obj) {
+        return new Gson().toJson(obj);
+    }
+
+    private <T> List<T> fromJsonList(String json, Class<T> clazz) {
+        Type typeOfT = TypeToken.getParameterized(List.class, clazz).getType();
+        return new Gson().fromJson(json, typeOfT);
+    }
+
+    public List<Order> findAllCached() {
+        String cacheKey = "orders:all";
+        String cachedJson = jedis.get(cacheKey);
+        if (cachedJson != null) {
+            return fromJsonList(cachedJson, Order.class);
+        }
+        List<Order> result = orderDAO.findAll();
+        jedis.setex(cacheKey, 30, toJson(result));
+        return result;
+    }
+
 
     @Override
     public List<Order> findAll() {
@@ -135,6 +178,17 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> findByUserId(int userId) {
-        return orderDAO.findByUserId(userId);
+        List<Order> orders = orderDAO.findByUserId(userId);
+        for (Order o : orders) {
+            if (o.getUser() != null) {
+                Hibernate.initialize(o.getUser());
+            }
+        }
+        return orders;
+    }
+
+    @Override
+    public List<Order> findAllPaginated(int offset, int limit) {
+        return orderDAO.findAllPaginated(offset, limit);
     }
 }

@@ -21,9 +21,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private JwtTokenUtil jwtTokenUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         final String header = request.getHeader("Authorization");
@@ -34,15 +32,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String username = jwtTokenUtil.getUsernameFromToken(token);
                     String role = jwtTokenUtil.getRoleFromToken(token);
 
-                    // Build authentication object
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            username, null,
-                            Collections.singleton(() -> role) // a GrantedAuthority
+                            username, null, Collections.singleton(() -> role)
                     );
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (ExpiredJwtException ex) {
-                // token expired
                 SecurityContextHolder.clearContext();
             }
         }

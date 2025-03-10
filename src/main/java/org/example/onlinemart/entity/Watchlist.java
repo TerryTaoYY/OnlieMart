@@ -11,14 +11,12 @@ import java.util.Date;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "watchlist",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "product_id"})
-        })
+@Table(name = "watchlist", uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "product_id"})})
 public class Watchlist {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "watchlist_id")
     private int watchlistId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,7 +28,7 @@ public class Watchlist {
     private Product product;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(nullable = false)
+    @Column(name = "created_at",nullable = false)
     private Date createdAt = new Date();
 
 }

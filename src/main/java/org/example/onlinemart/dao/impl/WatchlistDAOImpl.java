@@ -14,7 +14,6 @@ import java.util.List;
 @Repository
 @Transactional
 public class WatchlistDAOImpl implements WatchlistDAO {
-
     private final SessionFactory sessionFactory;
 
     public WatchlistDAOImpl(SessionFactory sessionFactory) {

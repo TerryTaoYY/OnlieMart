@@ -1,14 +1,18 @@
 package org.example.onlinemart.controller;
 
 import org.example.onlinemart.dao.OrderItemDAO;
+import org.example.onlinemart.dto.OrderDTO;
+import org.example.onlinemart.dto.PopularProductResult;
 import org.example.onlinemart.entity.Order;
 import org.example.onlinemart.entity.Product;
+import org.example.onlinemart.service.AdminSummaryService;
 import org.example.onlinemart.service.OrderService;
 import org.example.onlinemart.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -16,75 +20,108 @@ public class AdminController {
 
     private final ProductService productService;
     private final OrderService orderService;
-    // NEW: orderItemDAO for summary queries
     private final OrderItemDAO orderItemDAO;
+    private final AdminSummaryService adminSummaryService;
 
     public AdminController(ProductService productService,
                            OrderService orderService,
-                           OrderItemDAO orderItemDAO) {
+                           OrderItemDAO orderItemDAO,
+                           AdminSummaryService adminSummaryService) {
         this.productService = productService;
         this.orderService = orderService;
         this.orderItemDAO = orderItemDAO;
+        this.adminSummaryService = adminSummaryService;
     }
 
-    // For example, add a new product
     @PostMapping("/products")
     public Product addProduct(@RequestBody Product product) {
         productService.save(product);
         return product;
     }
 
-    // Update an existing product
+    @GetMapping("/products")
+    public List<Product> listAllProducts() {
+        return productService.findAll();
+    }
+
     @PatchMapping("/products/{productId}")
-    public Product updateProduct(@PathVariable int productId,
-                                 @RequestBody Product updated) {
+    public Product updateProduct(@PathVariable int productId, @RequestBody Product updated) {
         return productService.updateProductFields(productId, updated);
     }
 
-    // Mark order as Completed
     @PatchMapping("/orders/{orderId}/complete")
-    public Order completeOrder(@PathVariable int orderId) {
-        return orderService.completeOrder(orderId);
+    public OrderDTO completeOrder(@PathVariable int orderId) {
+        Order completed = orderService.completeOrder(orderId);
+        return OrderDTO.fromEntity(completed);
     }
 
-    // Cancel order
     @PatchMapping("/orders/{orderId}/cancel")
-    public Order cancelOrder(@PathVariable int orderId) {
-        return orderService.cancelOrder(orderId);
+    public OrderDTO cancelOrder(@PathVariable int orderId) {
+        Order canceled = orderService.cancelOrder(orderId);
+        return OrderDTO.fromEntity(canceled);
     }
 
-    // View orders, possibly with pagination
     @GetMapping("/orders")
-    public List<Order> listOrders() {
-        return orderService.findAll();
+    public List<OrderDTO> listOrders(@RequestParam(required = false) Integer page) {
+        if (page == null) {
+            List<Order> orders = orderService.findAllCached();
+            return orders.stream()
+                    .map(OrderDTO::fromEntity)
+                    .collect(Collectors.toList());
+        }
+        int pageSize = 5;
+        int currentPage = (page < 1) ? 1 : page;
+        int offset = (currentPage - 1) * pageSize;
+
+        return orderService.findAllPaginated(offset, pageSize).stream()
+                .map(OrderDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 
-    // ===================== Admin Summaries =====================
+    @GetMapping("/orders/{orderId}")
+    public OrderDTO viewSingleOrder(@PathVariable int orderId) {
+        Order order = orderService.findById(orderId);
+        if (order == null) {
+            throw new RuntimeException("Order not found with ID " + orderId);
+        }
+        return OrderDTO.fromEntity(order);
+    }
 
     @GetMapping("/summary/most-profit")
     public ProductStats mostProfitableProduct() {
-        // Now we pass orderItemDAO so items can be fetched from DB
-        return AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
+        return adminSummaryService.findMostProfitableProduct();
     }
 
-    @GetMapping("/summary/top3-popular")
-    public List<ProductStats> top3PopularProducts() {
-        return AdminSummaryUtil.findTop3Popular(orderService, orderItemDAO);
+    @GetMapping("/summary/admin-top3-popular")
+    public List<PopularProductResult> getTop3PopularProducts() {
+        List<Object[]> rows = orderItemDAO.findTop3Popular();
+        List<PopularProductResult> results = new ArrayList<>();
+
+        for (Object[] row : rows) {
+            Product product = (Product) row[0];
+            Long totalQty = (Long) row[1];
+            results.add(new PopularProductResult(
+                    (long) product.getProductId(),
+                    product.getProductName(),
+                    totalQty
+            ));
+        }
+        return results;
     }
 
     @GetMapping("/summary/total-sold")
     public int totalItemsSold() {
-        return AdminSummaryUtil.countTotalSold(orderService, orderItemDAO);
+        return adminSummaryService.countTotalSold();
     }
 
-    // Just a tiny data model to hold product ID and aggregated stats.
     public static class ProductStats {
         private int productId;
         private String productName;
         private double totalProfit;
         private int totalSold;
 
-        public ProductStats() {}
+        public ProductStats() {
+        }
 
         public ProductStats(int productId, String productName, double totalProfit, int totalSold) {
             this.productId = productId;
@@ -93,7 +130,6 @@ public class AdminController {
             this.totalSold = totalSold;
         }
 
-        // getters, setters
         public int getProductId() {
             return productId;
         }

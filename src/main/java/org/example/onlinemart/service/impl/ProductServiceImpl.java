@@ -21,7 +21,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product save(Product product) {
-        // Enforce any business logic checks here, e.g. wholesale < retail, etc.
         product.setCreatedAt(new Date());
         product.setUpdatedAt(new Date());
         productDAO.save(product);
@@ -34,7 +33,6 @@ public class ProductServiceImpl implements ProductService {
         if (existing == null) {
             throw new RuntimeException("Product with ID " + productId + " not found");
         }
-        // You can selectively update only certain fields or all fields:
         if (updates.getDescription() != null) {
             existing.setDescription(updates.getDescription());
         }
@@ -47,7 +45,6 @@ public class ProductServiceImpl implements ProductService {
         if (updates.getStock() != 0) {
             existing.setStock(updates.getStock());
         }
-        // If you allow renaming product:
         if (updates.getProductName() != null) {
             existing.setProductName(updates.getProductName());
         }

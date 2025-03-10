@@ -1,6 +1,9 @@
 package org.example.onlinemart.service.impl;
 
 import org.example.onlinemart.dao.UserDAO;
+import org.example.onlinemart.dao.WatchlistDAO;
+import org.example.onlinemart.entity.Product;
+import org.example.onlinemart.entity.Watchlist;
 import org.example.onlinemart.service.UserService;
 import org.example.onlinemart.entity.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -8,29 +11,33 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional 
 public class UserServiceImpl implements UserService {
 
     private final UserDAO userDAO;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserDAO userDAO, BCryptPasswordEncoder passwordEncoder) {
+    private final WatchlistDAO watchlistDAO;
+
+    public UserServiceImpl(UserDAO userDAO,
+                           BCryptPasswordEncoder passwordEncoder,
+                           WatchlistDAO watchlistDAO) {
         this.userDAO = userDAO;
         this.passwordEncoder = passwordEncoder;
+        this.watchlistDAO = watchlistDAO;
     }
 
     @Override
     public User register(User user) {
-        // Check duplicates
         if (userDAO.findByUsername(user.getUsername()) != null) {
             throw new RuntimeException("Username already exists.");
         }
         if (userDAO.findByEmail(user.getEmail()) != null) {
             throw new RuntimeException("Email already exists.");
         }
-        // Encode password
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userDAO.save(user);
         return user;
@@ -56,16 +63,12 @@ public class UserServiceImpl implements UserService {
         return userDAO.findAll();
     }
 
-    /**
-     * Update user fields. If password is updated, we re-encode it.
-     */
     @Override
     public User updateUser(int userId, User updates) {
         User existing = userDAO.findById(userId);
         if (existing == null) {
             throw new RuntimeException("User not found with ID " + userId);
         }
-        // If username or email must remain unique, you might check for conflicts:
         if (updates.getUsername() != null && !updates.getUsername().equals(existing.getUsername())) {
             if (userDAO.findByUsername(updates.getUsername()) != null) {
                 throw new RuntimeException("Username already taken: " + updates.getUsername());
@@ -78,12 +81,9 @@ public class UserServiceImpl implements UserService {
             }
             existing.setEmail(updates.getEmail());
         }
-        // If a non-empty password is given, re-hash
         if (updates.getPassword() != null && !updates.getPassword().trim().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(updates.getPassword()));
         }
-
-        // Potentially update role, or keep the existing one if you want to control that separately
         if (updates.getRole() != null) {
             existing.setRole(updates.getRole());
         }
@@ -100,5 +100,15 @@ public class UserServiceImpl implements UserService {
         existing.setRole(newRole);
         userDAO.update(existing);
         return existing;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Product> getWatchlistProductsInStock(int userId) {
+        List<Watchlist> watchlistItems = watchlistDAO.findByUserId(userId);
+        return watchlistItems.stream()
+                .map(Watchlist::getProduct)
+                .filter(p -> p.getStock() > 0)
+                .collect(Collectors.toList());
     }
 }
