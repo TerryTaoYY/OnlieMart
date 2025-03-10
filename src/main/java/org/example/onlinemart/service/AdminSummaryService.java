@@ -28,6 +28,7 @@ public class AdminSummaryService {
     @Value("${redis.cache.adminSummary.TTL:120}")
     private long adminSummaryCacheTTL;
 
+
     @Autowired
     public AdminSummaryService(OrderService orderService,
                                OrderItemDAO orderItemDAO,
@@ -58,6 +59,7 @@ public class AdminSummaryService {
     }
 
     public int countTotalSold() {
+
         String cacheKey = CacheKeys.AdminSummary.TOTAL_SOLD;
 
         Optional<Integer> cachedCount = cacheService.get(cacheKey, Integer.class);

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
+@Transactional 
 public class UserServiceImpl implements UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
@@ -168,7 +168,6 @@ public class UserServiceImpl implements UserService {
         if (existing == null) {
             throw new RuntimeException("User not found with ID " + userId);
         }
-
         if (updates.getUsername() != null && !updates.getUsername().equals(existing.getUsername())) {
             if (userDAO.findByUsername(updates.getUsername()) != null) {
                 throw new RuntimeException("Username already taken: " + updates.getUsername());
@@ -183,10 +182,10 @@ public class UserServiceImpl implements UserService {
             existing.setEmail(updates.getEmail());
         }
 
+
         if (updates.getPassword() != null && !updates.getPassword().trim().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(updates.getPassword()));
         }
-
         if (updates.getRole() != null) {
             existing.setRole(updates.getRole());
         }
@@ -218,6 +217,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<Product> getWatchlistProductsInStock(int userId) {
+
         String cacheKey = CacheKeys.Users.watchlist(userId);
         Optional<List<Product>> cachedProducts = cacheService.getList(cacheKey, Product.class);
 

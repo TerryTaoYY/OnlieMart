@@ -36,10 +36,9 @@ public class HibernateConfig {
         factoryBean.setPackagesToScan("org.example.onlinemart.entity");
         Properties props = new Properties();
 
-        // Basic hibernate properties
         props.put("hibernate.dialect", env.getProperty("spring.jpa.properties.hibernate.dialect"));
         props.put("hibernate.show_sql", env.getProperty("spring.jpa.show-sql"));
-        props.put("hibernate.hbm2ddl.auto", "validate"); // or update / none / create
+        props.put("hibernate.hbm2ddl.auto", "validate");
         factoryBean.setHibernateProperties(props);
         return factoryBean;
     }

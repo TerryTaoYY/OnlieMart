@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,9 +25,7 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthController(UserService userService,
-                          JwtTokenUtil jwtTokenUtil,
-                          BCryptPasswordEncoder passwordEncoder) {
+    public AuthController(UserService userService, JwtTokenUtil jwtTokenUtil, BCryptPasswordEncoder passwordEncoder) {
         this.userService = userService;
         this.jwtTokenUtil = jwtTokenUtil;
         this.passwordEncoder = passwordEncoder;
@@ -38,20 +38,26 @@ public class AuthController {
         newUser.setEmail(dto.getEmail());
         newUser.setPassword(dto.getPassword());
         userService.register(newUser);
-        return ResponseEntity.ok("Registration successful");
+        Map<String, String> response = Collections.singletonMap("message", "Registration successful");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginRequest request) {
         User user = userService.findByUsername(request.getUsername());
         if (user == null) {
-            // Use the custom exception
             throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Incorrect credentials, please try again.");
         }
-        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
+
+        String token = jwtTokenUtil.generateToken(
+                user.getUsername(),
+                user.getRole().name(),
+                user.getUserId()
+        );
+
         return ResponseEntity.ok(token);
     }
 }

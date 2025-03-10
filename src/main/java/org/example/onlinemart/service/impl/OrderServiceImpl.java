@@ -1,7 +1,9 @@
 package org.example.onlinemart.service.impl;
 
+
 import org.example.onlinemart.cache.CacheKeys;
 import org.example.onlinemart.cache.CacheService;
+
 import org.example.onlinemart.dao.OrderDAO;
 import org.example.onlinemart.dao.OrderItemDAO;
 import org.example.onlinemart.dao.ProductDAO;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.hibernate.Hibernate;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +30,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static sun.plugin2.util.PojoUtil.toJson;
 
 @Service
 @Transactional
@@ -38,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemDAO orderItemDAO;
     private final ProductDAO productDAO;
     private final UserDAO userDAO;
+
     private final CacheService cacheService;
 
     @Value("${redis.cache.orders.TTL:60}")
@@ -51,7 +57,9 @@ public class OrderServiceImpl implements OrderService {
         this.orderItemDAO = orderItemDAO;
         this.productDAO = productDAO;
         this.userDAO = userDAO;
+
         this.cacheService = cacheService;
+
     }
 
     @Override
@@ -103,6 +111,7 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("Cannot cancel a completed order");
         }
         if (order.getOrderStatus() == OrderStatus.Canceled) {
+
             if (order.getUser() != null) {
                 Hibernate.initialize(order.getUser());
             }
@@ -123,8 +132,10 @@ public class OrderServiceImpl implements OrderService {
             Hibernate.initialize(order.getUser());
         }
 
+
         invalidateOrderCaches(order.getUser().getUserId());
         cacheService.delete(CacheKeys.Orders.order(orderId));
+
 
         return order;
     }
@@ -152,18 +163,19 @@ public class OrderServiceImpl implements OrderService {
             Hibernate.initialize(order.getUser());
         }
 
+
         invalidateOrderCaches(order.getUser().getUserId());
         cacheService.delete(CacheKeys.Orders.order(orderId));
 
         cacheService.delete(CacheKeys.AdminSummary.MOST_PROFITABLE);
         cacheService.delete(CacheKeys.AdminSummary.TOTAL_SOLD);
         cacheService.delete(CacheKeys.AdminSummary.topPopular(3));
-
         return order;
     }
 
     @Override
     public Order findById(int orderId) {
+
         String cacheKey = CacheKeys.Orders.order(orderId);
         Optional<Order> cachedOrder = cacheService.get(cacheKey, Order.class);
 
@@ -204,6 +216,23 @@ public class OrderServiceImpl implements OrderService {
         return result;
     }
 
+    private <T> List<T> fromJsonList(String json, Class<T> clazz) {
+        Type typeOfT = TypeToken.getParameterized(List.class, clazz).getType();
+        return new Gson().fromJson(json, typeOfT);
+    }
+
+    public List<Order> findAllCached() {
+        String cacheKey = "orders:all";
+        String cachedJson = jedis.get(cacheKey);
+        if (cachedJson != null) {
+            return fromJsonList(cachedJson, Order.class);
+        }
+        List<Order> result = orderDAO.findAll();
+        jedis.setex(cacheKey, 30, toJson(result));
+        return result;
+    }
+
+
     @Override
     public List<Order> findAll() {
         return orderDAO.findAll();
@@ -235,6 +264,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> findAllPaginated(int offset, int limit) {
+
         String cacheKey = CacheKeys.Orders.paginated(offset / limit + 1, limit);
         Optional<List<Order>> cachedOrders = cacheService.getList(cacheKey, Order.class);
 

@@ -7,11 +7,10 @@ import org.example.onlinemart.entity.Order;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import redis.clients.jedis.Jedis;
 
 import java.util.List;
 
@@ -42,6 +41,7 @@ public class OrderDAOImpl implements OrderDAO {
     public void update(Order order) {
         sessionFactory.getCurrentSession().update(order);
 
+
         // Invalidate caches related to this order
         try {
             invalidateOrderCaches(order);
@@ -49,6 +49,7 @@ public class OrderDAOImpl implements OrderDAO {
             logger.warn("Failed to invalidate order caches for orderID {}", order.getOrderId(), e);
             // Don't propagate the exception - data is updated, cache invalidation is secondary
         }
+
     }
 
     @Override
