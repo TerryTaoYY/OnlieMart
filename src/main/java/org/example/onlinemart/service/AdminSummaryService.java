@@ -1,62 +1,129 @@
 package org.example.onlinemart.service;
 
-import com.google.gson.Gson;
+import org.example.onlinemart.cache.CacheKeys;
+import org.example.onlinemart.cache.CacheService;
 import org.example.onlinemart.controller.AdminController;
 import org.example.onlinemart.controller.AdminSummaryUtil;
 import org.example.onlinemart.dao.OrderItemDAO;
+import org.example.onlinemart.dto.PopularProductResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import redis.clients.jedis.Jedis;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.example.onlinemart.controller.AdminController.ProductStats;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AdminSummaryService {
+    private static final Logger logger = LoggerFactory.getLogger(AdminSummaryService.class);
 
     private final OrderService orderService;
     private final OrderItemDAO orderItemDAO;
-    private final Jedis jedis;
+    private final CacheService cacheService;
+
+    @Value("${redis.cache.adminSummary.TTL:120}")
+    private long adminSummaryCacheTTL;
+
 
     @Autowired
     public AdminSummaryService(OrderService orderService,
                                OrderItemDAO orderItemDAO,
-                               Jedis jedis) {
+                               CacheService cacheService) {
         this.orderService = orderService;
         this.orderItemDAO = orderItemDAO;
-        this.jedis = jedis;
+        this.cacheService = cacheService;
     }
 
-    public ProductStats findMostProfitableProduct() {
-        String cacheKey = "summary:mostProfit";
+    public AdminController.ProductStats findMostProfitableProduct() {
+        String cacheKey = CacheKeys.AdminSummary.MOST_PROFITABLE;
 
-        String cachedJson = jedis.get(cacheKey);
-        if (cachedJson != null) {
-            return fromJson(cachedJson, ProductStats.class);
+        Optional<AdminController.ProductStats> cachedStats =
+                cacheService.get(cacheKey, AdminController.ProductStats.class);
+
+        if (cachedStats.isPresent()) {
+            logger.debug("Cache hit for most profitable product");
+            return cachedStats.get();
         }
 
-        ProductStats result = AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
+        logger.debug("Cache miss for most profitable product");
+        AdminController.ProductStats result =
+                AdminSummaryUtil.findMostProfitableProduct(orderService, orderItemDAO);
 
-        jedis.setex(cacheKey, 60, toJson(result));
+        cacheService.set(cacheKey, result, adminSummaryCacheTTL, TimeUnit.SECONDS);
 
         return result;
     }
 
     public int countTotalSold() {
-        String cacheKey = "summary:totalSold";
-        String cached = jedis.get(cacheKey);
-        if (cached != null) {
-            return Integer.parseInt(cached);
+
+        String cacheKey = CacheKeys.AdminSummary.TOTAL_SOLD;
+
+        Optional<Integer> cachedCount = cacheService.get(cacheKey, Integer.class);
+
+        if (cachedCount.isPresent()) {
+            logger.debug("Cache hit for total sold count");
+            return cachedCount.get();
         }
 
+        logger.debug("Cache miss for total sold count");
+
         int total = AdminSummaryUtil.countTotalSold(orderService, orderItemDAO);
-        jedis.setex(cacheKey, 30, String.valueOf(total));
+        cacheService.set(cacheKey, total, adminSummaryCacheTTL, TimeUnit.SECONDS);
+
         return total;
     }
 
-    private String toJson(Object obj) {
-        return new Gson().toJson(obj);
+    public List<PopularProductResult> findTop3PopularProducts() {
+        String cacheKey = CacheKeys.AdminSummary.topPopular(3);
+
+        Optional<List<PopularProductResult>> cachedResults =
+                cacheService.getList(cacheKey, PopularProductResult.class);
+
+        if (cachedResults.isPresent()) {
+            logger.debug("Cache hit for top 3 popular products");
+            return cachedResults.get();
+        }
+
+        logger.debug("Cache miss for top 3 popular products");
+
+        List<Object[]> rows = orderItemDAO.findTop3Popular();
+        List<PopularProductResult> results = new ArrayList<>();
+
+        for (Object[] row : rows) {
+            org.example.onlinemart.entity.Product product = (org.example.onlinemart.entity.Product) row[0];
+            Long totalQty = (Long) row[1];
+            results.add(new PopularProductResult(
+                    (long) product.getProductId(),
+                    product.getProductName(),
+                    totalQty
+            ));
+        }
+
+        cacheService.set(cacheKey, results, adminSummaryCacheTTL, TimeUnit.SECONDS);
+
+        return results;
     }
 
-    private <T> T fromJson(String json, Class<T> clazz) {
-        return new Gson().fromJson(json, clazz);
+    /**
+     * Clears all admin summary caches. Should be called after significant data changes
+     * that would affect the summary statistics.
+     */
+    public void clearAllSummaryCaches() {
+        try {
+            logger.debug("Clearing all admin summary caches");
+            cacheService.delete(
+                    CacheKeys.AdminSummary.MOST_PROFITABLE,
+                    CacheKeys.AdminSummary.TOTAL_SOLD,
+                    CacheKeys.AdminSummary.topPopular(3),
+                    CacheKeys.AdminSummary.REVENUE_METRICS
+            );
+        } catch (Exception e) {
+            logger.warn("Error clearing admin summary caches", e);
+            // Don't propagate the exception - cache clearing should be non-critical
+        }
     }
 }

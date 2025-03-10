@@ -1,5 +1,7 @@
 package org.example.onlinemart.dao.impl;
 
+import org.example.onlinemart.cache.CacheKeys;
+import org.example.onlinemart.cache.CacheService;
 import org.example.onlinemart.dao.OrderDAO;
 import org.example.onlinemart.entity.Order;
 import org.hibernate.Session;
@@ -16,24 +18,38 @@ import java.util.List;
 @Transactional
 public class OrderDAOImpl implements OrderDAO {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderDAOImpl.class);
+
     private final SessionFactory sessionFactory;
-    private final Jedis jedis;
+    private final CacheService cacheService;
 
     @Autowired
-    public OrderDAOImpl(SessionFactory sessionFactory, Jedis jedis) {
+    public OrderDAOImpl(SessionFactory sessionFactory, CacheService cacheService) {
         this.sessionFactory = sessionFactory;
-        this.jedis = jedis;
+        this.cacheService = cacheService;
     }
 
     @Override
     public void save(Order order) {
         sessionFactory.getCurrentSession().save(order);
+
+        // No need to invalidate caches here as this is a new order
+        // and won't affect existing cached data
     }
 
     @Override
     public void update(Order order) {
         sessionFactory.getCurrentSession().update(order);
-        jedis.del("orders:all");
+
+
+        // Invalidate caches related to this order
+        try {
+            invalidateOrderCaches(order);
+        } catch (Exception e) {
+            logger.warn("Failed to invalidate order caches for orderID {}", order.getOrderId(), e);
+            // Don't propagate the exception - data is updated, cache invalidation is secondary
+        }
+
     }
 
     @Override
@@ -72,5 +88,45 @@ public class OrderDAOImpl implements OrderDAO {
         query.setFirstResult(offset);
         query.setMaxResults(limit);
         return query.list();
+    }
+
+    /**
+     * Helper method to invalidate all caches related to an order
+     *
+     * @param order The order whose caches should be invalidated
+     */
+    private void invalidateOrderCaches(Order order) {
+        // Always invalidate the specific order cache
+        cacheService.delete(CacheKeys.Orders.order(order.getOrderId()));
+
+        // Always invalidate the "all orders" cache
+        cacheService.delete(CacheKeys.Orders.ALL);
+
+        // If the order has a user, invalidate user-specific order cache
+        if (order.getUser() != null) {
+            int userId = order.getUser().getUserId();
+            cacheService.delete(CacheKeys.Orders.userOrders(userId));
+
+            // Also invalidate user activity caches that depend on orders
+            cacheService.delete(CacheKeys.UserActivity.frequentPurchases(userId, 3));
+            cacheService.delete(CacheKeys.UserActivity.recentPurchases(userId, 3));
+        }
+
+        // Invalidate the first few pages of paginated results
+        // This is a simple approach; a more sophisticated approach would track which pages
+        // might contain this order, but this ensures data consistency for the most commonly
+        // accessed pages
+        for (int page = 1; page <= 3; page++) {
+            cacheService.delete(CacheKeys.Orders.paginated(page, 5));
+        }
+
+        // If order status changed to completed, invalidate admin summary caches
+        if (order.getOrderStatus() == Order.OrderStatus.Completed) {
+            cacheService.delete(CacheKeys.AdminSummary.MOST_PROFITABLE);
+            cacheService.delete(CacheKeys.AdminSummary.TOTAL_SOLD);
+            cacheService.delete(CacheKeys.AdminSummary.topPopular(3));
+        }
+
+        logger.debug("Invalidated caches for order ID: {}", order.getOrderId());
     }
 }
